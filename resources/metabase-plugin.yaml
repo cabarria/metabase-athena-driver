@@ -18,6 +18,8 @@ driver:
     - name: s3_staging_dir
       display-name: S3 Staging dir
       default: s3://your_bucket
+    - name: aws_profile
+      display-name: AWS Profile Name in ~/.aws/credentials
     - name: access_key
       display-name: Access Key
     - merge:

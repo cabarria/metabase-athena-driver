@@ -48,22 +48,25 @@
 
 ;;; ---------------------------------------------- sql-jdbc.connection -----------------------------------------------
 
-(defmethod sql-jdbc.conn/connection-details->spec :athena [_ {:keys [region access_key secret_key s3_staging_dir workgroup db], :as details}]
-  (-> (merge
-       {:classname        "com.simba.athena.jdbc.Driver"
-        :subprotocol      "awsathena"
-        :subname          (str "//athena." region ".amazonaws.com:443")
-        :user             access_key
-        :password         secret_key
-        :s3_staging_dir   s3_staging_dir
-        :workgroup        workgroup
-        :AwsRegion        region
-    ; :LogLevel    6
-}
-       (when (str/blank? access_key)
-         {:AwsCredentialsProviderClass "com.simba.athena.amazonaws.auth.DefaultAWSCredentialsProviderChain"})
-       (dissoc details :db))
-      (sql-jdbc.common/handle-additional-options details, :seperator-style :semicolon)))
+(defmethod sql-jdbc.conn/connection-details->spec :athena [_ {:keys [region aws_profile access_key secret_key s3_staging_dir workgroup db], :as details}]
+           (-> (merge
+                {:classname        "com.simba.athena.jdbc.Driver"
+                 :subprotocol      "awsathena"
+                 :subname          (str "//athena." region ".amazonaws.com:443")
+                 :user             access_key
+                 :password         secret_key
+                 :s3_staging_dir   s3_staging_dir
+                 :workgroup        workgroup
+                 :AwsRegion        region
+                 ; :LogLevel    6
+                 }
+                (if (and (str/blank? access_key) (str/blank? aws_profile))
+                  ({:AwsCredentialsProviderClass "com.simba.athena.amazonaws.auth.DefaultAWSCredentialsProviderChain"})
+                  (if (not (str/blank? aws_profile))
+                    {:AwsCredentialsProviderClass "com.simba.athena.amazonaws.auth.profile.ProfileCredentialsProvider"
+                     :AwsCredentialsProviderArguments aws_profile}))
+                (dissoc details :aws_profile :db))
+               (sql-jdbc.common/handle-additional-options details, :seperator-style :semicolon)))
 
 ;;; ------------------------------------------------- sql-jdbc.sync --------------------------------------------------
 
